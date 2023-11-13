@@ -1,6 +1,6 @@
 import { object, string, TypeOf } from "zod";
 
-export const createServerSchema = object({
+export const CreateServerSchema = object({
   name: string().min(1, {
     message: "Server name is required.",
   }),
@@ -9,4 +9,4 @@ export const createServerSchema = object({
   }),
 });
 
-export type CreateServerFormData = TypeOf<typeof createServerSchema>;
+export type CreateServerFormData = TypeOf<typeof CreateServerSchema>;

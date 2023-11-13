@@ -6,24 +6,23 @@ import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
 import { MemberRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { CreateServerFormData, createServerSchema } from "@/lib/schemas";
+import { CreateServerFormData, CreateServerSchema } from "@/lib/schemas";
 
 export const createServer = async (
   prevState: any,
   formData: CreateServerFormData
 ) => {
   try {
-    const { name, imageUrl } = createServerSchema.parse({
-      name: formData.name,
-      imageUrl: formData.imageUrl,
-    });
+    const validationRes = CreateServerSchema.safeParse(formData);
 
-    if (!name || !imageUrl)
+    if (!validationRes.success)
       return { success: false, message: "Invalid Form Values" };
 
     const profile = await currentProfile();
 
     if (!profile) return { success: false, message: "Unauthorized" };
+
+    const { name, imageUrl } = formData;
 
     await db.server.create({
       data: {

@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/useModalStore";
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
-import { createServerSchema } from "@/lib/schemas";
+import { CreateServerSchema } from "@/lib/schemas";
 import { createServer } from "@/actions/server";
 import { useCallback, useEffect } from "react";
 
@@ -48,7 +48,7 @@ export const CreateServerModal = () => {
   const router = useRouter();
 
   const form = useForm({
-    resolver: zodResolver(createServerSchema),
+    resolver: zodResolver(CreateServerSchema),
     defaultValues: {
       name: "",
       imageUrl: "",
