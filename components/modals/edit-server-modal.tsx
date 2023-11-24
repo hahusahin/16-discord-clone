@@ -1,7 +1,10 @@
 "use client";
 
+import axios from "axios";
+import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 
 import {
   Dialog,
@@ -24,50 +27,56 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/file-upload";
 import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/use-modal-store";
-import { useFormState, useFormStatus } from "react-dom";
-import { Loader2 } from "lucide-react";
-import { CreateServerSchema } from "@/lib/schemas";
-import { createServer } from "@/actions/server";
-import { useCallback, useEffect } from "react";
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
+const formSchema = z.object({
+  name: z.string().min(1, {
+    message: "Server name is required.",
+  }),
+  imageUrl: z.string().min(1, {
+    message: "Server image is required.",
+  }),
+});
 
-  return (
-    <Button variant="primary" type="submit" disabled={pending}>
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Create
-    </Button>
-  );
-}
-
-export const CreateServerModal = () => {
-  const [state, formAction] = useFormState(createServer, null);
-
-  const { isOpen, onClose, type } = useModal();
+export const EditServerModal = () => {
+  const { isOpen, onClose, type, data } = useModal();
   const router = useRouter();
 
+  const isModalOpen = isOpen && type === "editServer";
+  const { server } = data;
+
   const form = useForm({
-    resolver: zodResolver(CreateServerSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       imageUrl: "",
     },
   });
 
-  const handleClose = useCallback(() => {
+  useEffect(() => {
+    if (server) {
+      form.setValue("name", server.name);
+      form.setValue("imageUrl", server.imageUrl);
+    }
+  }, [server, form]);
+
+  const isLoading = form.formState.isSubmitting;
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await axios.patch(`/api/servers/${server?.id}`, values);
+
+      form.reset();
+      router.refresh();
+      onClose();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleClose = () => {
     form.reset();
     onClose();
-  }, [form, onClose]);
-
-  useEffect(() => {
-    if (state?.success) {
-      handleClose();
-      router.refresh();
-    }
-  }, [state, handleClose, router]);
-
-  const isModalOpen = isOpen && type === "createServer";
+  };
 
   return (
     <Dialog open={isModalOpen} onOpenChange={handleClose}>
@@ -82,10 +91,7 @@ export const CreateServerModal = () => {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            action={() => formAction(form.getValues())}
-            className="space-y-8"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-8 px-6">
               <div className="flex items-center justify-center text-center">
                 <FormField
@@ -115,6 +121,7 @@ export const CreateServerModal = () => {
                     </FormLabel>
                     <FormControl>
                       <Input
+                        disabled={isLoading}
                         className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
                         placeholder="Enter server name"
                         {...field}
@@ -124,14 +131,11 @@ export const CreateServerModal = () => {
                   </FormItem>
                 )}
               />
-              {state?.success === false && (
-                <p className="text-sm font-medium text-destructive">
-                  {state?.message}
-                </p>
-              )}
             </div>
             <DialogFooter className="bg-gray-100 px-6 py-4">
-              <SubmitButton />
+              <Button variant="primary" disabled={isLoading}>
+                Save
+              </Button>
             </DialogFooter>
           </form>
         </Form>
